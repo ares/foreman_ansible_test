@@ -57,7 +57,7 @@
     path: /work
     owner: ares
     group: foreman-admins
-    mode: '0664'
+    mode: '0775'
 
 - name: Set the group in /work every now and then
   cron:
@@ -72,23 +72,24 @@
     owner: ares
     state: link
 
-- name: Copy bashrc to home dir skeleton
+- name: Copy local /etc/bashrc to remote home dir skeleton
   copy:
-    src: /root/.bashrc
+    src: /etc/bashrc
     dest: /etc/skel/.bashrc
     owner: root
     group: root
     mode: '0644'
 
 - name: Read the content of the motd
-  command: cat /etc/motd
-    register: motd_content
+  command:
+    cmd: cat /etc/motd
+  register: motd_content
 
 - name: Run some shell script
   shell:
     cmd: |
       ls *.log
-      md5sum *
+      md5sum *.log
     chdir: /var/log
 
 - name: Git clone a repo
