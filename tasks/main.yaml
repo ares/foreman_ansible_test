@@ -1,0 +1,98 @@
+---
+- name: Install the openssh package
+  package:
+    name: openssh
+    state: present
+
+- name: Start and enable the sshd
+  service:
+    name: sshd
+    state: started
+    enabled: true
+
+- name: Install the base packages
+  package:
+    name:
+      - mc
+      - vim
+      - git
+    state: present
+
+- name: Create the message of the day
+  template:
+    src: motd.j2
+    dest: /etc/motd
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Update the message of the day to see some diff
+  template:
+    src: motd_2.j2
+    dest: /etc/motd
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Create foreman-admins group
+  group:
+    name: foreman-admins
+    state: present
+
+- name: Create user ares
+  user:
+    name: ares
+    shell: /bin/bash
+    state: present
+    groups: foreman-admins
+
+- name: Create a /work directory if it does not exist
+  file:
+    path: /work
+    state: directory
+    mode: '0755'
+
+- name: Change /work ownership, group and permissions
+  file:
+    path: /work
+    owner: ares
+    group: foreman-admins
+    mode: '0664'
+
+- name: Set the group in /work every now and then
+  cron:
+    name: "set the group ownership in /work"
+    minute: "0"
+    job: "chgrp -R foreman-admins /work/*"
+
+- name: Symlink work from home directory
+  file:
+    src: /work
+    dest: /home/ares/work
+    owner: ares
+    state: link
+
+- name: Copy bashrc to home dir skeleton
+  copy:
+    src: /root/.bashrc
+    dest: /etc/skel/.bashrc
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Read the content of the motd
+  command: cat /etc/motd
+    register: motd_content
+
+- name: Run some shell script
+  shell:
+    cmd: |
+      ls *.log
+      md5sum *
+    chdir: /var/log
+
+- name: Git clone a repo
+  git:
+    repo: 'https://github.com/ares/foreman_ansible_test.git'
+    dest: /work/foreman_ansible_test
+
